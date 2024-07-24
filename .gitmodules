@@ -1,0 +1,3 @@
+[submodule "gumbo-query"]
+	path = gumbo-query
+	url = https://github.com/ElPresedente/gumbo-query

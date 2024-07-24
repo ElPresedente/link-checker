@@ -1,0 +1,12 @@
+{
+  "name": "link-checker",
+  "version": "1.0.0",
+  "dependencies": [
+    "boost-locale",
+    "cpr",
+    "gtkmm",
+    "gumbo",
+    "boost-url",
+    "pkgconf"
+  ]
+}
