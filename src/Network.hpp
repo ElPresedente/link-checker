@@ -9,6 +9,7 @@
 
 #include <cpr/cpr.h>
 #include <boost/url.hpp>
+#include <boost/regex.hpp>
 
 #include "Types.hpp"
 
@@ -24,11 +25,13 @@ public:
 
     static void add_user_agent(std::string);
     static void clear_user_agents();
-
-    static Url normalize_url(Url url, Url base_url);
-
-private:
     static std::string& get_user_agent();
+
+    static Url normalize_url(const Url& url, const Url &base_url);
+    static bool is_same_domain(const Url& url, const Url &child_url);
+    static bool is_file(const Url&);
+    static bool is_valid_url(Url);
+
     static std::vector<std::string> user_agents; // пул юзер агентов
 };
 

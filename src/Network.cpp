@@ -32,7 +32,7 @@ void Network::clear_user_agents() {
     user_agents.clear();
 }
 
-Url Network::normalize_url(Url url, Url base_url) {
+Url Network::normalize_url(const Url& url, const Url &base_url) {
     std::function<bool(char)> charset = [](char ch){
         const std::string chars {
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -59,6 +59,28 @@ Url Network::normalize_url(Url url, Url base_url) {
 
     auto ret = parsed_base_link.buffer();
     return ret;
+}
+
+bool Network::is_same_domain(const Url& url, const Url &child_url) {
+    auto parsed_url1 = boost::urls::parse_uri(url);
+    auto parsed_url2 = boost::urls::parse_uri(child_url);
+    return (parsed_url1->host() == parsed_url2->host());
+}
+
+bool Network::is_file(const Url& url) {
+    auto parsed_url = boost::urls::parse_uri(url)->path();
+    return parsed_url.ends_with(".pdf") || parsed_url.ends_with(".doc") || parsed_url.ends_with(".docx");
+}
+
+bool Network::is_valid_url(Url url) {
+    auto result = boost::urls::parse_uri(url);
+
+    // Проверка на ошибки
+    if (!result.error()) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 std::string& Network::get_user_agent() {
