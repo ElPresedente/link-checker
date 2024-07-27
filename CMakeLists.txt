@@ -3,9 +3,7 @@ set(CMAKE_TOOLCHAIN_FILE "F:/vcpkg/scripts/buildsystems/vcpkg.cmake")
 message("Toolchain=${CMAKE_TOOLCHAIN_FILE}")
 project(link_checker)
 
-
-
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 add_subdirectory(gumbo-query)
 

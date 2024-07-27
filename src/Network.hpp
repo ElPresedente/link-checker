@@ -8,6 +8,7 @@
 #include <random>
 
 #include <cpr/cpr.h>
+#include <boost/url.hpp>
 
 #include "Types.hpp"
 
@@ -23,6 +24,8 @@ public:
 
     static void add_user_agent(std::string);
     static void clear_user_agents();
+
+    static Url normalize_url(Url url, Url base_url);
 
 private:
     static std::string& get_user_agent();

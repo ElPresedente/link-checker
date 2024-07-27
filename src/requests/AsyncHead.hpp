@@ -15,6 +15,8 @@ public:
     explicit AsyncHead(cpr::AsyncWrapper<cpr::Response>);
 
     bool get();
+
+    cpr::Response get_full();
 private:
     cpr::AsyncWrapper<cpr::Response> promise;
 };
