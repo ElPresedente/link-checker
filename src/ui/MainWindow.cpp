@@ -3,7 +3,7 @@
 //
 
 #include "MainWindow.hpp"
-
+#include <OpenXLSX.hpp>
 #include "../Types.hpp"
 
 using namespace Application;
@@ -191,16 +191,22 @@ void MainWindow::main_program(const Url& url, const Encoding& encoding, const st
                     {
                         auto page_content_promise = Network::async_get(current_url);
                         auto resp = page_content_promise.get();
-                        pages_queue.emplace(page.depth + 1, resp.text, current_url, encoding);
-                        visited_pages.emplace(current_url);
+                        if(resp.status_code != 200) {
+                            //TODO GET request error
+                        }
+                        else {
+                            pages_queue.emplace(page.depth + 1, resp.text, current_url, encoding);
+                            visited_pages.emplace(current_url);
+                            //TODO GET request success
+                        }
                     }
                 }
                 catch(std::exception& ex) {
-
+                    //TODO GET request error
                 }
             }
             else {
-
+                //TODO head request error
             }
             i++;
         }

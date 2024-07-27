@@ -1,3 +1,6 @@
 [submodule "gumbo-query"]
 	path = gumbo-query
 	url = https://github.com/ElPresedente/gumbo-query
+[submodule "OpenXLSX"]
+	path = OpenXLSX
+	url = https://github.com/troldal/OpenXLSX

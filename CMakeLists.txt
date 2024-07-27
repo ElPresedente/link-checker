@@ -6,6 +6,7 @@ project(link_checker)
 set(CMAKE_CXX_STANDARD 23)
 
 add_subdirectory(gumbo-query)
+add_subdirectory(OpenXLSX)
 
 find_package(PkgConfig REQUIRED)
 
@@ -30,4 +31,5 @@ target_link_libraries(link_checker
         cpr::cpr
         Boost::url
         Boost::locale
+        OpenXLSX::OpenXLSX
 )
