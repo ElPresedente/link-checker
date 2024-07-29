@@ -24,6 +24,10 @@ add_executable(link_checker main.cc
         src/Network.cpp
         src/requests/AsyncHead.cpp
         src/requests/AsyncGet.cpp
+        src/Logger.cpp
+        src/Utility.cpp
+        src/ui/ProgressBarMessage.cpp
+        src/ui/ProgressBarMessage.hpp
 )
 target_link_libraries(link_checker
         gumbo_query_static

@@ -6,12 +6,16 @@
 #define MAINWINDOW_HPP
 
 #include <queue>
+#include <stack>
 #include <sstream>
+#include <thread>
 
 #include <gtkmm.h>
 
 #include "../Types.hpp"
 #include "../Page.hpp"
+#include "../Logger.hpp"
+#include "ProgressBarMessage.hpp"
 
 namespace Application  {
 
@@ -31,6 +35,15 @@ protected: // здесь значимые элементы
     Gtk::ScrolledWindow scroll_list;
     Gtk::ListView user_agent_list;
     Glib::RefPtr<Gtk::StringList> string_list;
+    std::vector<Gtk::ProgressBar> progress_bars;
+    std::vector<Gtk::Label> progress_labels;
+
+    Glib::Dispatcher dispatcher, finish_dispatcher;
+    std::vector<ProgressBarMessage> progress_state;
+    mutable std::mutex state_mutex;
+
+    void on_dispather();
+    void on_end();
 
     void start();
 
@@ -44,9 +57,11 @@ protected: // здесь значимые элементы
 private: //здесь промежуточные контейнеры
     Gtk::Frame url_input_label, encoding_input_label, css_query_input_label, depth_entry_input_label, user_agent_input_label;
     Glib::RefPtr<Gtk::Adjustment> depth_adjustment;
+    Logger logger;
+    std::optional<std::thread> program_thread;
+    const int grid_size = 5; //константа для динамического добавления элементов под основным гридом
 
     void main_program(const Url& url, const Encoding& encoding, const std::string &css_query, int depth);
-
 };
 
 } // Application

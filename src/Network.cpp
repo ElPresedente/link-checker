@@ -24,6 +24,13 @@ Requests::AsyncGet Network::async_get(Url url) {
     };
 }
 
+cpr::Response Network::get(Url url) {
+    return cpr::Get(
+        cpr::Url{std::move(url)},
+        cpr::Header{{"User-Agent", get_user_agent()}}
+    );
+}
+
 void Network::add_user_agent(std::string user_agent) {
     user_agents.emplace_back(std::move(user_agent));
 }

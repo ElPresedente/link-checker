@@ -22,6 +22,7 @@ class Network {
 public:
     static Requests::AsyncHead async_head(Url);
     static Requests::AsyncGet async_get(Url);
+    static cpr::Response get(Url);
 
     static void add_user_agent(std::string);
     static void clear_user_agents();

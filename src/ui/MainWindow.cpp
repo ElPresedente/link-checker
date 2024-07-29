@@ -13,8 +13,6 @@ MainWindow::MainWindow()
     : depth_adjustment(Gtk::Adjustment::create(1.0, 1.0, 4.0, 1.0, 1.0, 0.0)),
     string_list(Gtk::StringList::create({"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}))
 {
-    Network::add_user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
-
 #ifndef NDEBUG
     url_entry.set_text("https://oreluniver.ru/sveden");
     encoding_entry.set_text("windows-1251");
@@ -94,6 +92,12 @@ MainWindow::MainWindow()
     );
     main_grid.attach(clear_user_agent_button, 2, 4);
     set_child(main_grid);
+    // конец UI
+
+    Network::add_user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36");
+    logger.set_table_filename("report");
+    dispatcher.connect(sigc::mem_fun(*this, &MainWindow::on_dispather));
+    finish_dispatcher.connect(sigc::mem_fun(*this, &MainWindow::on_end));
 }
 
 void MainWindow::on_setup_label(const Glib::RefPtr<Gtk::ListItem>& list_item)
@@ -112,6 +116,32 @@ void MainWindow::on_bind_name(const Glib::RefPtr<Gtk::ListItem>& list_item)
     label->set_text(string_list->get_string(pos));
 }
 
+
+void MainWindow::on_dispather() {
+    std::lock_guard<std::mutex> m{state_mutex};
+    try
+    {
+        for(auto&& state : progress_state){
+            progress_labels.at(state.depth).set_text(state.label_text);
+            progress_bars.at(state.depth).set_fraction(state.progress);
+        }
+    }
+    catch(std::exception& ex) {
+        std::string a = ex.what();
+        a.push_back('1');
+    }
+
+}
+
+void MainWindow::on_end() {
+    progress_bars.clear();
+    progress_labels.clear();
+    int row = grid_size + progress_state.size() - 1;
+    for(auto&& item : progress_state) {
+        main_grid.remove_row(row--);
+    }
+    progress_state.clear();
+}
 
 void MainWindow::start() {
     if(Network::user_agents.empty()) {
@@ -140,7 +170,20 @@ void MainWindow::start() {
     }
     int depth;
     std::istringstream (depth_entry.get_text()) >> depth;
-    main_program(url, encoding, css_query, depth);
+    int row = grid_size;
+    for(int i = 0; i < depth; i++) {
+        auto&& bar = progress_bars.emplace_back();
+        bar.set_expand(true);
+        auto&& label = progress_labels.emplace_back();
+        main_grid.attach(label, 0, row);
+        main_grid.attach(bar, 1, row++, 2, 1);
+        label.set_text("[0/0]");
+        bar.set_fraction(0.5);
+        auto&& state = progress_state.emplace_back();
+        state.depth = i;
+    }
+    program_thread = std::thread{&Application::MainWindow::main_program, this, url, encoding, css_query, depth};
+    program_thread.value().detach();
 }
 
 void MainWindow::add_user_agent() {
@@ -168,49 +211,67 @@ void MainWindow::main_program(const Url& url, const Encoding& encoding, const st
     if(start_page_content.status_code != 200)
         return;
 
-    std::queue<Page> pages_queue;
+    std::stack<Page> pages_queue;
     std::set<Url> visited_pages;
-    pages_queue.emplace(1, start_page_content.text, url, encoding); //стартовая страница
+    pages_queue.emplace(0, start_page_content.text, url, encoding); //стартовая страница
 
     while(!pages_queue.empty()) {
-        auto& page = pages_queue.back();
-
+        auto& page = pages_queue.top();
+        if(page.depth >= depth) {
+            pages_queue.pop();
+            continue;
+        }
         std::vector<Application::Requests::AsyncHead> requests;
-        for(auto&& link : page.get_links(css_query)) {
+        auto links = page.get_links(css_query);
+
+        for(auto&& link : links) {
             requests.emplace_back(Network::async_head(link));
         }
-        for(int i = 1; auto&& promise : requests) {
+        for(int i = 0; auto&& promise : requests) {
+            // изменение GUI
+            try
+            {
+                std::lock_guard<std::mutex> m{state_mutex};
+                progress_state.at(page.depth) = {std::format("[{}/{}]", i, requests.size()),
+                    static_cast<double>(i) / static_cast<double>(requests.size()), page.depth};
+            }
+            catch(std::exception& ex) {
+                std::string a = ex.what();
+                a.push_back('1');
+            }
+            dispatcher.emit();
+
             auto response = promise.get_full();
             if(response.status_code == 200) {
                 const std::string& current_url = response.url.str();
+                logger.log(current_url, page.url, response.status_code);
                 try {
                     if(Network::is_same_domain(page.url, current_url) &&
                         !Network::is_file(current_url) &&
                         !visited_pages.contains(current_url) &&
-                        page.depth <= depth)
+                        page.depth < depth)
                     {
-                        auto page_content_promise = Network::async_get(current_url);
-                        auto resp = page_content_promise.get();
+                        auto resp = Network::get(current_url);
                         if(resp.status_code != 200) {
-                            //TODO GET request error
+                            logger.log(current_url, page.url, resp.status_code, resp.error.message);
                         }
                         else {
                             pages_queue.emplace(page.depth + 1, resp.text, current_url, encoding);
                             visited_pages.emplace(current_url);
-                            //TODO GET request success
                         }
                     }
                 }
                 catch(std::exception& ex) {
-                    //TODO GET request error
+                    logger.log(current_url, page.url, -1, ex.what());
                 }
             }
             else {
-                //TODO head request error
+                logger.log(response.url.c_str(), "none", response.status_code, response.error.message);
             }
             i++;
         }
 
         pages_queue.pop();
     }
+    finish_dispatcher.emit();
 }
