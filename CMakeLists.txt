@@ -29,6 +29,10 @@ add_executable(link_checker main.cc
         src/ui/ProgressBarMessage.cpp
         src/ui/ProgressBarMessage.hpp
 )
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    target_compile_definitions(link_checker PUBLIC "WINDOWS")
+    target_link_options(link_checker PUBLIC /subsystem:windows)
+endif()
 target_link_libraries(link_checker
         gumbo_query_static
         PkgConfig::GTKMM #спасибо реддит
